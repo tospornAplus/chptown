@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Vientiane Town</title>
+<style>
+  :root{--bg:#f6f7fb;--card:#fff;--text:#0f172a;--muted:#64748b;--pri:#0ea5e9;--ok:#10b981;--warn:#f59e0b;--bad:#ef4444;--bd:#e5e7eb;--bd-strong:#cbd5e1}
+  *{box-sizing:border-box}body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Inter,Arial,sans-serif;color:var(--text);background:var(--bg)}
+  header{position:sticky;top:0;z-index:20;background:#fff8;border-bottom:1px solid var(--bd);backdrop-filter:saturate(140%) blur(8px)}
+  .wrap{max-width:1200px;margin:0 auto;padding:16px}
+  .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+  .grow{flex:1}
+  .btn{display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border-radius:10px;border:1px solid var(--bd);background:#fff;cursor:pointer;font-weight:600}
+  .btn[disabled]{opacity:.5;cursor:not-allowed}
+  .btn.pri{background:var(--pri);border-color:var(--pri);color:#fff}
+  .btn.ok{background:var(--ok);border-color:var(--ok);color:#fff}
+  .btn.bad{background:#fff;border-color:var(--bad);color:#ef4444}
+  .btn.ghost{background:transparent}
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:16px;box-shadow:0 4px 20px rgba(15,23,42,.04)}
+  .card h3{margin:0 0 6px 0;font-size:18px}
+  .card .content{padding:14px}
+  .kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .kpi{padding:14px;border-radius:14px;background:#fff;border:1px solid var(--bd)}
+  .muted{color:var(--muted)}
+  .tabs{display:flex;gap:6px;flex-wrap:wrap}
+  .tab{padding:8px 10px;border-radius:9px;border:1px solid var(--bd);background:#fff;cursor:pointer;font-weight:600}
+  .tab.active{background:var(--pri);border-color:var(--pri);color:#fff}
+  .grid{display:grid;gap:10px}
+  .table{display:grid;gap:8px}
+  .thead,.trow{display:grid;grid-template-columns:120px 140px 120px 1fr 1fr;gap:8px;align-items:center}
+  .thead{font-weight:700;color:var(--muted)}
+  .trow{border-top:2px solid var(--bd-strong);padding-top:10px;margin-top:6px}
+  .status{display:inline-flex;align-items:center;gap:6px;padding:3px 8px;border-radius:999px;font-size:12px;border:1px solid var(--bd)}
+  .s-free{background:#ecfdf5;color:#065f46;border-color:#a7f3d0}
+  .s-hold{background:#fffbeb;color:#92400e;border-color:#fde68a}
+  .s-busy{background:#fef2f2;color:#991b1b;border-color:#fecaca}
+  input,select,textarea{width:100%;padding:8px 10px;border-radius:10px;border:1px solid var(--bd)}
+  textarea{resize:vertical}
+  label{font-size:12px;color:var(--muted)}
+  .hint{font-size:12px;color:var(--muted)}
+  .pillbar{display:flex;gap:6px;flex-wrap:wrap}
+  .pill{padding:6px 10px;border:1px solid var(--bd);border-radius:999px;background:#fff;font-size:12px}
+  .right{display:flex;justify-content:flex-end;gap:8px}
+  .section{display:grid;gap:8px}
+  .hidden{display:none!important}
+  .announce textarea{min-height:100px;font-size:16px;line-height:1.45} /* bigger and easier to read */
+  .plan{width:100%;aspect-ratio:16/7;background:#f1f5f9;border:1px solid var(--bd);border-radius:14px;overflow:hidden;display:grid;place-items:center}
+  .plan img{width:100%;height:100%;object-fit:cover}
+  .edit-ico{margin-left:8px;cursor:pointer;font-size:12px;color:var(--pri)}
+  .rename-wrap{display:inline-flex;gap:6px;align-items:center;margin-left:8px}
+  .rename-wrap input{width:auto;min-width:220px}
+  .note-cell{max-height:70px;overflow:auto}
+  .danger{color:var(--bad);font-weight:700}
+
+  /* tenants table */
+  .tenHead,.tenRow{display:grid;grid-template-columns:80px 90px 160px 130px 110px 110px 170px 110px 1fr 110px 220px;gap:8px;align-items:center}
+  .tenHead{font-weight:700;color:var(--muted)}
+  .tenRow{border-top:2px solid var(--bd-strong);padding-top:10px;margin-top:6px}
+
+  /* Mobile tweaks */
+  @media (max-width: 900px){
+    .wrap{ padding:12px; }
+    .tabs{ overflow:auto; }
+    .plan{ aspect-ratio:auto; }
+    .plan img{ width:100%; height:auto; object-fit:contain; }
+    .kpis{ grid-template-columns:1fr; }
+    .thead{ display:none; }
+    .trow{ grid-template-columns:1fr; gap:8px; padding-top:10px; }
+    .table{ gap:12px; }
+    .btn{ padding:8px 10px; }
+    .pillbar{ gap:6px; }
+    .pill{ padding:5px 8px; font-size:11px; }
+    .row{ gap:8px; }
+    .tenHead{display:none;}
+    .tenRow{grid-template-columns:1fr}
+  }
+
+  .tenants-page{font-size:90%}
+</style>
+<!-- Optional Firebase for cloud sync -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+</head>
+<body>
+<header>
+  <div class="wrap row">
+    <div id="brandBox" class="row" style="font-weight:800;gap:6px"></div>
+    <div class="row" style="margin-left:auto">
+      <div id="langLinks" class="row" style="gap:8px"></div>
+      <button class="btn" id="btnLogin"></button>
+      <div id="who" class="muted"></div>
+    </div>
+  </div>
+</header>
+<main class="wrap" id="app"></main>
+
+<script>
+/* ================= i18n ================= */
+const i18n = {
+  th:{
+    expired:"หมดสัญญา",
+    duration:"ระยะเช่า",
+    code_col:"Code",
+    zone_col:"Zone",
+    overview:"ภาพรวม", zones:"โซน/ราคา", leasing:"เช่า/จอง", tenants:"ข้อมูลผู้เช่า", settings:"ตั้งค่า",
+    welcome:"สวัสดี", login:"เข้าสู่ระบบ", logout:"ออกจากระบบ",
+    kpi_free:"บูทว่าง", kpi_busy:"บูทไม่ว่าง", kpi_all:"จำนวนบูททั้งหมด",
+    zones_title:"รายละเอียดแต่ละโซน", list_head_code:"รหัส", list_head_size:"ขนาด", list_head_status:"สถานะ", list_head_price:"ราคา", list_head_actions:"การจัดการ",
+    price_thb_mo:"ราคา (บาท/เดือน)", lak_mo:"กีบ/เดือน (ราคาหลังหักส่วนลด {d}% )", lak_yr:"กีบ/ปี (ราคาหลังหักส่วนลด {d}% )",
+    request:"ขอจอง", toggle:"ทำเป็นไม่ว่าง/ว่าง", add:"เพิ่มบูท", add_zone:"เพิ่มโซน", del:"ลบบูท",
+    status_free:"ว่าง", status_hold:"จองแล้ว", status_busy:"ไม่ว่าง",
+    req_title:"ส่งคำขอจอง", renter:"ชื่อผู้เช่า", phone:"เบอร์โทร", goods:"รายละเอียดสินค้า",
+    start:"วันเริ่ม", end:"วันสิ้นสุด", unit:"หน่วย", months:"เดือน", years:"ปี", days:"วัน",
+    approve:"อนุมัติ", reject:"ไม่อนุมัติ", pending:"กำลังพิจารณา",
+    leasing_reqs:"คำขอเช่า/จอง", cannot_request:"บูทนี้ไม่ว่าง ไม่สามารถขอจองได้",
+    settings_title:"การตั้งค่า", discounts:"ส่วนลด (%)", allowed:"เงื่อนไขระยะเวลา",
+    per_day:"รายวัน", per_month:"รายเดือน", per_year:"รายปี", save:"บันทึก",
+    announce:"ประกาศข่าวสาร", auth_needed:"(ต้องเข้าสู่ระบบ)", login_needed:"ต้องเข้าสู่ระบบเพื่อเข้าดู",
+    role_admin:"Admin", role_mgmt:"Management",
+    confirm_add:"ยืนยันเพิ่มบูทใหม่หรือไม่?", confirm_del:"ยืนยันลบบูท {code} หรือไม่?",
+    rule_violate:"วันเริ่ม/สิ้นสุดไม่ตรงตามเงื่อนไขการเช่าของโซนนี้",
+    plan:"แผนผังโครงการ", change_plan:"เปลี่ยนรูปผัง",
+    dur_summary:"สรุป: {d} วัน · {m} เดือน · {y} ปี",
+    zone_name:"ชื่อโซน", rename:"แก้ไขชื่อ",
+    cloud:"Cloud Sync (เซิร์ฟเวอร์)", fb_set:"Firebase Config (JSON)",
+    fb_connect:"เชื่อมต่อ", fb_status_on:"เชื่อมแล้ว", fb_status_off:"ยังไม่เชื่อม",
+    users:"ผู้ใช้ระบบ", add_user:"เพิ่มผู้ใช้", del_user:"ลบ",
+    perm_title:"สิทธิ์การเข้าถึง", p_overview:"Overview", p_zones:"Zones", p_leasing:"Leasing", p_tenants:"ข้อมูลผู้เช่า", p_settings:"Settings",
+    ten_export:"Export", ten_title:"ข้อมูลผู้เช่า", price:"ราคา", days_left:"เหลือ(วัน)", note:"หมายเหตุ",
+    only_one_approve:"บูทนี้ถูกอนุมัติไปก่อนแล้ว"
+  },
+  lo:{
+    expired:"ໝົດສັນຍາ",
+    duration:"ໄລຍະເຊົ່າ",
+    code_col:"Code",
+    zone_col:"Zone",
+    overview:"ພາບລວມ", zones:"ໂຊນ/ລາຄາ", leasing:"ເຊົ່າ/ຈອງ", tenants:"ຂໍ້ມູນຜູ້ເຊົ່າ", settings:"ການຕັ້ງຄ່າ",
+    welcome:"ສະບາຍດີ", login:"ເຂົ້າລະບົບ", logout:"ອອກຈາກລະບົບ",
+    kpi_free:"ບູດວ່າງ", kpi_busy:"ບູດບໍ່ວ່າງ", kpi_all:"ຈຳນວນບູດທັງໝົດ",
+    zones_title:"ລາຍລະອຽດໂຊນ", list_head_code:"ລະຫັດ", list_head_size:"ຂະໜາດ", list_head_status:"ສະຖານະ", list_head_price:"ລາຄາ", list_head_actions:"ຈັດການ",
+    price_thb_mo:"ລາຄາ (ບາດ/ເດືອນ)", lak_mo:"ກີບ/ເດືອນ (ຫຼັງຫັກ {d}% )", lak_yr:"ກີບ/ປີ (ຫຼັງຫັກ {d}% )",
+    request:"ຂໍຈອງ", toggle:"ປ່ຽນສະຖານະ", add:"ເພີ່ມບູດ", add_zone:"ເພີ່ມໂຊນ", del:"ລົບ",
+    status_free:"ວ່າງ", status_hold:"ຈອງແລ້ວ", status_busy:"ບໍ່ວ່າງ",
+    req_title:"ສົ່ງຄຳຂໍຈອງ", renter:"ຊື່ຜູ້ເຊົ່າ", phone:"ເບີໂທ", goods:"ລາຍລະອຽດສິນຄ້າ",
+    start:"ເລີ່ມ", end:"ສິ້ນສຸດ", unit:"ໜ່ວຍ", months:"ເດືອນ", years:"ປີ", days:"ວັນ",
+    approve:"ອະນຸມັດ", reject:"ປະຕິເສດ", pending:"ກຳລັງພິຈາລະນາ",
+    leasing_reqs:"ຄຳຂໍເຊົ່າ/ຈອງ", cannot_request:"ບູດນີ້ບໍ່ວ່າງ",
+    settings_title:"ການຕັ້ງຄ່າ", discounts:"ສ່ວນຫຼຸດ (%)", allowed:"ເວລາທີ່ອະນຸຍາດ",
+    per_day:"ລາຍວັນ", per_month:"ລາຍເດືອນ", per_year:"ລາຍປີ", save:"ບັນທຶກ",
+    announce:"ປະກາດຂ່າວສານ", auth_needed:"(ຕ້ອງເຂົ້າລະບົບ)", login_needed:"ຕ້ອງເຂົ້າລະບົບ",
+    role_admin:"Admin", role_mgmt:"Management",
+    confirm_add:"ຢືນຢັນເພີ່ມບູດບໍ?", confirm_del:"ຢືນຢັນລົບ {code} ບໍ?",
+    rule_violate:"ວັນເລີ່ມ/ສິ້ນສຸດບໍ່ຖືກຕ້ອງ",
+    plan:"ແຜນຜັງໂຄງການ", change_plan:"ປ່ຽນຮູບ",
+    dur_summary:"ສະຫຼຸບ: {d} ວັນ · {m} ເດືອນ · {y} ປີ",
+    zone_name:"ຊື່ໂຊນ", rename:"ແກ້ຊື່",
+    cloud:"Cloud Sync", fb_set:"Firebase Config (JSON)", fb_connect:"ເຊື່ອມ", fb_status_on:"ເຊື່ອມແລ້ວ", fb_status_off:"ບໍ່ເຊື່ອມ",
+    users:"ຜູ້ໃຊ້", add_user:"ເພີ່ມ", del_user:"ລົບ",
+    perm_title:"ສິດທິ", p_overview:"Overview", p_zones:"Zones", p_leasing:"Leasing", p_tenants:"ຂໍ້ມູນຜູ້ເຊົ່າ", p_settings:"Settings",
+    ten_export:"Export .xlsx", ten_title:"ຂໍ້ມູນຜູ້ເຊົ່າ", price:"ລາຄາ", days_left:"ຍັງເຫຼືອ(ວັນ)", note:"ໝາຍເຫດ",
+    only_one_approve:"ບູດນີ້ຖືກອະນຸມັດແລ້ວ"
+  },
+  en:{
+    expired:"Expired",
+    code_col:"Code",
+    zone_col:"Zone",
+    overview:"Overview", zones:"Zones/Pricing", leasing:"Leasing/Requests", tenants:"Tenants", settings:"Settings",
+    welcome:"Welcome", login:"Login", logout:"Logout",
+    kpi_free:"Vacant", kpi_busy:"Occupied", kpi_all:"Total booths",
+    zones_title:"Zone details", list_head_code:"Code", list_head_size:"Size", list_head_status:"Status", list_head_price:"Price", list_head_actions:"Actions",
+    price_thb_mo:"Price (THB/month)", lak_mo:"LAK/month (after {d}% discount)", lak_yr:"LAK/year (after {d}% discount)",
+    request:"Request", toggle:"Toggle busy", add:"Add booth", add_zone:"Add Zone", del:"Delete",
+    status_free:"Vacant", status_hold:"Reserved", status_busy:"Occupied",
+    req_title:"Send booking request", renter:"Tenant", phone:"Phone", goods:"Goods detail",
+    start:"Start", end:"End", unit:"Unit", months:"months", years:"years", days:"days",
+    approve:"Approve", reject:"Reject", pending:"Pending",
+    leasing_reqs:"Lease/Booking Requests", cannot_request:"This booth is not available",
+    settings_title:"Settings", discounts:"Discounts (%)", allowed:"Allowed durations",
+    per_day:"Daily", per_month:"Monthly", per_year:"Yearly", save:"Save",
+    announce:"Announcements", auth_needed:"(login required)", login_needed:"Login required",
+    role_admin:"Admin", role_mgmt:"Management",
+    confirm_add:"Confirm add new booth?", confirm_del:"Delete booth {code}?",
+    rule_violate:"Start/End do not satisfy zone rules",
+    plan:"Site plan", change_plan:"Change image",
+    dur_summary:"Summary: {d} days · {m} months · {y} years",
+    zone_name:"Zone name", rename:"Rename",
+    cloud:"Cloud Sync", fb_set:"Firebase Config (JSON)", fb_connect:"Connect", fb_status_on:"Connected", fb_status_off:"Not connected",
+    users:"Users", add_user:"Add user", del_user:"Delete",
+    perm_title:"Access permissions", p_overview:"Overview", p_zones:"Zones", p_leasing:"Leasing", p_tenants:"Tenants", p_settings:"Settings",
+    ten_export:"Export .xlsx", ten_title:"Tenants", price:"Price", days_left:"Days left", note:"Note",
+    only_one_approve:"Booth already approved"
+  }
+};
+let LANG = localStorage.getItem('lang') || 'th';
+
+/* ================ Persistence with optional Firebase Cloud Sync ================= */
+const THB_to_LAK_DEFAULT = 650;
+const LS_KEY = 'chptown-data-v2';
+
+// Simple event bus for cross-module notify
+const Bus = { listeners:{}, on(k,fn){(this.listeners[k]||(this.listeners[k]=[])).push(fn)}, emit(k,p){(this.listeners[k]||[]).forEach(f=>f(p))} };
+
+// Local store
+const store = {
+  load(){ return JSON.parse(localStorage.getItem(LS_KEY) || 'null'); },
+  save(d){ localStorage.setItem(LS_KEY, JSON.stringify(d)); }
+};
+
+// Optional Cloud via Firebase Firestore
+const Cloud = {
+  ready:false, unsub:null, docRef:null,
+  init(){
+    const cfg = DB.firebase?.config;
+    if(!cfg || !cfg.apiKey || typeof firebase==='undefined') return;
+    try{
+      if(firebase.apps.length===0) firebase.initializeApp(cfg);
+      const db = firebase.firestore();
+      const docId = DB.firebase.docId || 'main';
+      this.docRef = db.collection('chptown').doc(docId);
+      this.ready = true;
+      try{ this.docRef.get().then((snap)=>{ const d=snap.data&&snap.data(); if(d){ DB=Object.assign({}, d); window.__syncedOnce=true; store.save(DB); render(); }}).catch(()=>{}); }catch(_){ }
+      this.docRef.onSnapshot((snap)=>{
+        const data = snap.data();
+        if(!data) return;
+        const localRev = (DB && DB.rev) ? DB.rev : 0;
+        const cloudRev = (data && data.rev) ? data.rev : 0;
+        if(!window.__syncedOnce || cloudRev >= localRev){
+          DB = Object.assign({}, data);
+          window.__syncedOnce = true;
+          store.save(DB);
+          render();
+        }
+      });
+    }catch(e){ console.warn('Cloud init error',e); this.ready=false; }
+  },
+  push(){
+    if(!this.ready || !this.docRef) return;
+    const payload = {...DB};
+    try{ this.docRef.set(payload, {merge:false}); }catch(e){ console.warn('Cloud push error',e); }
+  }
+};
+
+/* ================ Seed/Migrate ================= */
+function migrate(db){
+  const def = {
+    rateTHB: THB_to_LAK_DEFAULT,
+    plan: "plan.png",
+    projectName: "Vientiane Town",
+    announcements: "",
+    discounts: { A:{m:0,y:10}, B:{m:0,y:15}, C:{m:5,y:0}, D:{m:0,y:15}, E:{m:0,y:15} },
+    allowed:   { A:{d:false,m:false,y:true}, B:{d:false,m:true,y:true}, C:{d:true,m:true,y:true}, D:{d:false,m:true,y:true}, E:{d:false,m:true,y:true} },
+    // Zones after renaming: D removed, E->D, F->E
+    zones: [
+      { id:'A', name:{th:'Zone A – ร้านค้าต่างๆ', lo:'Zone A – ຮ້ານຄ້າ', en:'Zone A – Retail'}, booths:[
+        { code:'A1', size:'15x8 m', status:'free', thbMo:25000, contract:null },
+        { code:'A2', size:'13.5x8 m', status:'free', thbMo:22000, contract:null },
+        ...Array.from({length:8},(_,i)=>({ code:`A${i+3}`, size:'4x8 m', status:'free', thbMo:6500, contract:null }))
+      ]},
+      { id:'B', name:{th:'Zone B – ศูนย์อาหาร', lo:'Zone B – ສູນອາຫານ', en:'Zone B – Food court'}, booths:[
+        ...Array.from({length:18},(_,i)=>({ code:`B${i+1}`, size:'3x4 m', status:'free', thbMo:5000, contract:null })),
+        ...Array.from({length:4},(_,i)=>({ code:`B${i+19}`, size:'5x7 m', status:'free', thbMo:8000, contract:null }))
+      ]},
+      { id:'C', name:{th:'Zone C – ตลาดนัด', lo:'Zone C – ຕະຫຼາດນັດ', en:'Zone C – Flea/Events'}, booths: Array.from({length:50},(_,i)=>({ code:`C${i+1}`, size:'2x3 m (เต็นท์)', status:'free', thbDay:120, bookings:[] })) },
+      { id:'D', name:{th:'Zone D – ร้านบุฟเฟต์', lo:'Zone D – ຮ້ານບຸບເຟ່', en:'Zone D – Buffet'}, booths:[ { code:'D1', size:'4x8 m', status:'free', thbMo:20000, contract:null } ]},
+      { id:'E', name:{th:'Zone E – ร้านอื่นๆ', lo:'Zone E – ຮ້ານອື່ນໆ', en:'Zone E – Others'}, booths:[ { code:'E1', size:'อาคารเก่า', status:'free', thbMo:12500, contract:null } ]}
+    ],
+    requests: [],
+    tenants: [],
+    users:[ {u:'Admin', p:'Admin133326', role:'Admin'}, {u:'Management', p:'MNM224339', role:'Management'} ],
+    permissions:{
+      Admin:{ overview:true, zones:true, leasing:true, tenants:true, settings:false },
+      Management:{ overview:true, zones:true, leasing:true, tenants:true, settings:true }
+    },
+    firebase:{ config:{"apiKey": "AIzaSyD2ahhyNxmkdAhN5DTRD6bdy_a-aeWHEbY", "authDomain": "chptown.firebaseapp.com", "projectId": "chptown", "storageBucket": "chptown.firebasestorage.app", "messagingSenderId": "289558487610", "appId": "1:289558487610:web:0115041d71adedfbe40b03"}, docId:'main' },
+    rev:1
+  };
+  if(!db) db = def;
+
+  // === migration of old structure ===
+  // Ensure permissions has tenants key
+  db.permissions = db.permissions||{};
+  ['Admin','Management'].forEach(r=>{
+    db.permissions[r] = db.permissions[r]||{};
+    if(typeof db.permissions[r].tenants==='undefined') db.permissions[r].tenants=true;
+  });
+
+  db.tenants = db.tenants || [];
+
+  // Zone renaming: remove old D (if exists), move E->D and F->E
+  if(Array.isArray(db.zones)){
+    // find E/F
+    const zE = db.zones.find(z=>z.id==='E');
+    const zF = db.zones.find(z=>z.id==='F');
+    // remove old D (multi-purpose)
+    db.zones = db.zones.filter(z=>z.id!=='D');
+    if(zE){ zE.id='D'; /* keep existing name */ }
+    if(zF){ zF.id='E'; /* keep existing name */ }
+    // remove duplicates then sort by id
+    const seen = new Set(); db.zones = db.zones.filter(z=>{ if(seen.has(z.id)) return false; seen.add(z.id); return true; }).sort((a,b)=>a.id.localeCompare(b.id));
+  }
+
+  // Discounts/Allowed keys mapping D removed, E->D, F->E
+  const mapKey = (obj)=>{
+    obj = obj||{};
+    const next = {};
+    Object.entries(obj).forEach(([k,v])=>{
+      if(k==='E') next['D']=v;
+      else if(k==='F') next['E']=v;
+      else if(k!=='D') next[k]=v;
+    });
+    ['A','B','C','D','E'].forEach(k=>{ if(!next[k]) next[k]=def[k?'discounts' in obj?'discounts':'allowed':k]; });
+    return next;
+  };
+  db.discounts = mapKey(db.discounts);
+  db.allowed = mapKey(db.allowed);
+
+  if(!db.rateTHB) db.rateTHB = THB_to_LAK_DEFAULT;
+  if(!db.plan) db.plan = "plan.png";
+  if(!db.projectName) db.projectName = "Vientiane Town";
+  if(!db.firebase) db.firebase = {config:null, docId:'main'};
+  db.rev = (db.rev||0)+1;
+  return db;
+}
+
+let DB = migrate(store.load());
+
+/* ================ Auth ================ */
+let currentUser = null;
+const can = {
+  viewLeasing(){ return !!currentUser && !!(DB.permissions?.[currentUser.role]?.leasing); },
+  viewSettings(){ return !!currentUser && !!(DB.permissions?.[currentUser.role]?.settings); },
+  viewTenants(){ return !!currentUser && !!(DB.permissions?.[currentUser.role]?.tenants); },
+  manageBooth(){ return !!currentUser && currentUser.role==='Management'; }
+};
+function openLoginModal(dic){
+  const wrap = document.createElement('div');
+  wrap.style.position='fixed';wrap.style.inset='0';wrap.style.background='rgba(0,0,0,.35)';wrap.style.display='grid';wrap.style.placeItems='center';wrap.style.zIndex=60;
+  wrap.innerHTML = `
+  <div class="card" style="width:min(420px,92vw)"><div class="content">
+    <h3>${dic.login}</h3>
+    <div class="grid" style="gap:8px">
+      <div><label>User</label><input id="lgU"></div>
+      <div><label>Password</label><input id="lgP" type="password"></div>
+    </div>
+    <div class="right" style="margin-top:10px"><button class="btn" id="lgCancel">Cancel</button><button class="btn pri" id="lgOk">OK</button></div>
+  </div></div>`;
+  document.body.appendChild(wrap);
+  $('#lgCancel',wrap).onclick=()=> wrap.remove();
+  $('#lgOk',wrap).onclick=()=>{
+    const u=$('#lgU',wrap).value; const p=$('#lgP',wrap).value;
+    const ok = DB.users.find(x=>x.u===u && x.p===p);
+    if(!ok){ alert('Login failed'); return; }
+    currentUser = ok; wrap.remove(); render();
+  };
+}
+
+/* ================ Utils ================ */
+const $ = (sel, el=document)=> el.querySelector(sel);
+const $$ = (sel, el=document)=> Array.from(el.querySelectorAll(sel));
+const fmt = n => (Number(n)||0).toLocaleString();
+const parseNum = s => Number(String(s||'').replace(/,/g,'').trim()||0);
+function thb2lak(thb){ return (thb||0) * (DB.rateTHB||THB_to_LAK_DEFAULT); }
+function lakAfterDiscount(base, pct){ return Math.round((base||0) * (1 - (pct||0)/100)); }
+function daysBetween(a,b){ const s=new Date(a), e=new Date(b); return Math.max(0, Math.round((e-s)/86400000)+1); }
+function monthsBetween(a,b){ const s=new Date(a), e=new Date(b); let m=(e.getFullYear()-s.getFullYear())*12 + (e.getMonth()-s.getMonth()); if(e.getDate()>=s.getDate()) m+=1; return Math.max(1,m); }
+function yearsBetween(a,b){ const m=monthsBetween(a,b); return Math.max(1, Math.round(m/12)); }
+function withinAllowed(zoneId, start, end){ const allow = DB.allowed[zoneId]; if(!allow) return true; const days=daysBetween(start,end); const months=monthsBetween(start,end); const years=yearsBetween(start,end);
+  if(allow.y && !allow.m && !allow.d){ return months%12===0; }
+  if(!allow.d && days<28 && allow.m){ return months>=1; }
+  return (allow.d && days>=1) || (allow.m && months>=1) || (allow.y && years>=1);
+}
+function diffYMD(start,end){
+  let s=new Date(start), e=new Date(end); if(!(s instanceof Date)||!(e instanceof Date)||isNaN(s)||isNaN(e)) return {y:0,m:0,d:0,total:0};
+  if(e<s){ const t=s; s=e; e=t; }
+  let y=0,m=0; let cur=new Date(s);
+  while(true){ const n=new Date(cur); n.setFullYear(n.getFullYear()+1); if(n<=e){ y++; cur=n; } else break; }
+  while(true){ const n=new Date(cur); n.setMonth(n.getMonth()+1); if(n<=e){ m++; cur=n; } else break; }
+  const d=Math.max(0, Math.round((e-cur)/86400000));
+  const total=Math.max(0, Math.round((e-s)/86400000)+1);
+  return {y,m,d,total};
+}
+function todayISO(){ const d=new Date(); return d.toISOString().slice(0,10); }
+function dateDMY(s){
+  if(!s) return '';
+  const p = String(s).split('-');
+  if(p.length===3) return `${p[2]}-${p[1]}-${p[0]}`;
+  try{ const d = new Date(s); if(!isNaN(d)) return String(d.getDate()).padStart(2,'0')+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+d.getFullYear(); }catch(_){}
+  return s;
+}
+
+
+/* ================ App & Render ================ */
+const app = document.getElementById('app');
+const tabs = ['overview','zones','leasing','tenants','settings'];
+let activeTab = 'overview';
+
+function planBlock(dic, withUpload){
+  const canChange = withUpload && currentUser && currentUser.role==='Management';
+  return `
+  <div class="card"><div class="content">
+    <h3>${dic.plan}</h3>
+    <div class="plan">${DB.plan?`<img src="${DB.plan}">`:'(no image)'} </div>
+    ${canChange?`<div class="right" style="margin-top:8px"><label class="btn"><input id="planPick" type="file" accept="image/*" style="display:none">${dic.change_plan}</label></div>`:''}
+  </div></div>`;
+}
+
+function render(){
+  // Language buttons
+  const langLinks = document.getElementById('langLinks');
+  if(langLinks){
+    const labels={lo:'LAO', th:'TH', en:'EN'};
+    langLinks.innerHTML = ['lo','th','en'].map(k=>`<button class="btn ghost" data-lang="${k}" style="padding:4px 8px;${k===LANG?'border-color:var(--pri);color:var(--pri)':''}">${labels[k]}</button>`).join('');
+    $$("[data-lang]", langLinks).forEach(b=> b.onclick=()=>{ LANG=b.dataset.lang; localStorage.setItem('lang',LANG); render(); });
+  }
+  const dic = i18n[LANG];
+
+  const brandBox = document.getElementById('brandBox');
+  if(brandBox){
+    brandBox.innerHTML = `${DB.projectName||'Vientiane Town'} ${currentUser?`<span class="edit-ico" data-brand-rename>✎ ${i18n[LANG].rename}</span>`:''}`;
+  }
+
+  const btnLogin = document.getElementById('btnLogin');
+  if(btnLogin){
+    btnLogin.textContent = currentUser? dic.logout : dic.login;
+    btnLogin.onclick = ()=>{
+      if(currentUser){ currentUser=null; render(); return; }
+      openLoginModal(dic);
+    };
+  }
+  const who = document.getElementById('who');
+  if(who) who.textContent = currentUser? `${dic.welcome}, ${currentUser.u} (${currentUser.role})` : '';
+
+  let nav = `
+    <div class="row tabs">
+      ${tabs.map(t=>{
+        const locked = (t==='leasing' && !can.viewLeasing()) || (t==='tenants' && !can.viewTenants()) || (t==='settings' && !can.viewSettings());
+        return `<button class="tab ${activeTab===t?'active':''}" data-tab="${t}" ${locked?'disabled':''}>${dic[t]||t}</button>`;
+      }).join('')}
+    </div>`;
+
+  let body='';
+  if(activeTab==='overview') body = renderOverview(dic);
+  else if(activeTab==='zones') body = renderZones(dic);
+  else if(activeTab==='leasing' && can.viewLeasing()) body = renderLeasing(dic);
+  else if(activeTab==='tenants' && can.viewTenants()) body = renderTenants(dic);
+  else if(activeTab==='settings' && can.viewSettings()) body = renderSettings(dic);
+
+  app.innerHTML = nav + (body||'');
+  $$('.tab', app).forEach(b=> b.onclick=()=>{ activeTab=b.dataset.tab; render(); });
+
+  const planPick = document.getElementById('planPick');
+  if(planPick){ planPick.onchange = (e)=>{ const f=e.target.files?.[0]; if(!f) return; const rd=new FileReader(); rd.onload=()=>{ DB.plan=rd.result; touch(); render(); }; rd.readAsDataURL(f); }; }
+}
+
+function touch(){ DB.rev=(DB.rev||0)+1; store.save(DB); Cloud.push(); }
+
+/* ================ Overview ================ */
+function renderOverview(dic){
+  const counts = {free:0,busy:0,hold:0,all:0};
+  DB.zones.forEach(z=> z.booths.forEach(b=>{ counts.all++; if(b.status==='free') counts.free++; else if(b.status==='hold') counts.hold++; else counts.busy++; }));
+  const announcementEditable = currentUser && (currentUser.role==='Admin' || currentUser.role==='Management');
+  const html = `
+  <section class="grid" style="gap:12px;margin-top:12px">
+    ${planBlock(dic, true)}
+
+    <div class="card announce">
+      <div class="content">
+        <h3>${dic.announce} ${announcementEditable?'':'<span class=\"muted\">'+dic.auth_needed+'</span>'}</h3>
+        <textarea id="annBox" ${announcementEditable?'':'disabled'} placeholder="...">${DB.announcements||''}</textarea>
+        <div class="right" style="margin-top:8px"><button class="btn pri" id="saveAnn" ${announcementEditable?'':'disabled'}>${dic.save}</button></div>
+      </div>
+    </div>
+
+    <div class="kpis">
+      <div class="kpi"><div class="muted">${dic.kpi_free}</div><div style="font-size:22px;font-weight:800">${fmt(counts.free)}</div></div>
+      <div class="kpi"><div class="muted">${dic.kpi_busy}</div><div style="font-size:22px;font-weight:800">${fmt(counts.busy)}</div></div>
+      <div class="kpi"><div class="muted">${dic.kpi_all}</div><div style="font-size:22px;font-weight:800">${fmt(counts.all)}</div></div>
+    </div>
+
+    <div class="card">
+      <div class="content">
+        <h3>${dic.zones_title}</h3>
+        ${DB.zones.map((z)=>`
+          <div class="section" style="margin:8px 0 12px 0" data-zsec="${z.id}">
+            <div class="z-title" style="font-weight:700">
+              ${z.id} • <span class="z-name">${z.name[LANG]||z.id}</span>
+              ${currentUser?`<span class="edit-ico" data-rename="${z.id}">✎ ${i18n[LANG].rename}</span>`:''}
+            </div>
+            <div class="pillbar">
+              ${z.booths.map(b=>`<span class="pill">${b.code} · <span class="${b.status==='free'?'s-free':(b.status==='hold'?'s-hold':'s-busy')} status">${dic['status_'+(b.status==='free'?'free':(b.status==='hold'?'hold':'busy'))]}</span></span>`).join('')}
+            </div>
+          </div>`).join('')}
+      </div>
+    </div>
+  </section>`;
+  setTimeout(()=>{
+    const saveAnn = document.getElementById('saveAnn');
+    if(saveAnn){ saveAnn.onclick=()=>{ DB.announcements = document.getElementById('annBox').value; touch(); alert('Saved'); }; }
+  },0);
+  return html;
+}
+function openInlineRename(zid){
+  if(!currentUser){ alert('Login required'); return; }
+  const z = DB.zones.find(x=>x.id===zid); if(!z) return;
+  let titleWrap = document.querySelector(`[data-zsec="${zid}"] .z-title`);
+  if(titleWrap){
+    const current = z.name[LANG]||z.id;
+    titleWrap.innerHTML = `${zid} • <span class="rename-wrap"><input id="rnInput" value="${current}"><button class="btn ok" id="rnSave">Save</button><button class="btn bad" id="rnCancel">Cancel</button></span>`;
+    $('#rnInput', titleWrap).focus();
+    $('#rnSave', titleWrap).onclick = ()=>{ const v=$('#rnInput', titleWrap).value || current; z.name[LANG]=v; touch(); render(); };
+    $('#rnCancel', titleWrap).onclick = ()=>{ render(); };
+  }
+}
+function openBrandRename(){
+  if(!currentUser){ alert('Login required'); return; }
+  const box = document.getElementById('brandBox');
+  const current = DB.projectName || 'Vientiane Town';
+  box.innerHTML = `<span class="rename-wrap"><input id="pnInput" value="${current}"><button class="btn ok" id="pnSave">Save</button><button class="btn bad" id="pnCancel">Cancel</button></span>`;
+  $('#pnInput', box)?.focus?.();
+  $('#pnSave', box).onclick = ()=>{ const v = $('#pnInput', box).value || current; DB.projectName = v; touch(); render(); };
+  $('#pnCancel', box).onclick = ()=>{ render(); };
+}
+
+/* ================ Zones/Pricing ================ */
+function renderZones(dic){
+  let selected = window.__zoneSel || DB.zones[0]?.id || 'A';
+  const zone = DB.zones.find(z=>z.id===selected) || DB.zones[0];
+  window.__zoneSel = zone.id;
+  const canManage = can.manageBooth();
+
+  let html = `
+    <section class="grid" style="gap:12px;margin-top:12px">
+      ${planBlock(dic, false)}
+      <div class="row">
+        <div class="muted">Zones:</div>
+        ${DB.zones.map(z=>`<button class="btn ${z.id===zone.id?'pri':''}" data-z="${z.id}">${z.id}</button>`).join('')}
+        <button class="btn" data-add-zone ${canManage?'':'disabled'}>${dic.add_zone}</button>
+        <div class="muted" style="margin-left:auto">1฿ = ${fmt(DB.rateTHB)} ₭</div>
+      </div>
+
+      <div class="card"><div class="content">
+        <h3>${zone.id} • <span class="z-name">${zone.name[LANG]||zone.id}</span> ${currentUser?`<span class="edit-ico" data-rename="${zone.id}">✎ ${i18n[LANG].rename}</span>`:''}</h3>
+        <div class="thead">
+          <div>${dic.list_head_code}</div>
+          <div>${dic.list_head_size}</div>
+          <div>${dic.list_head_status}</div>
+          <div>${dic.list_head_price}</div>
+          <div>${dic.list_head_actions}</div>
+        </div>
+        <div class="table" id="boothList">
+          ${zone.booths.map(b=> boothRow(dic, zone, b, canManage)).join('')}
+        </div>
+        <div class="right" style="margin-top:8px">
+          <button class="btn" data-add ${canManage?'':'disabled'}>${dic.add}</button>
+        </div>
+      </div></div>
+    </section>
+  `;
+  setTimeout(()=> bindZoneEvents(dic, zone, canManage),0);
+  return html;
+}
+function boothRow(dic, zone, b, canManage){
+  const zdisc = DB.discounts[zone.id]||{m:0,y:0};
+  let priceBlock='';
+  if(zone.id==='C'){ // daily
+    const thbDay = b.thbDay||120;
+    const lakDay = thb2lak(thbDay);
+    const mo = Math.round(lakDay*30*(1-(DB.discounts[zone.id]?.m||0)/100));
+    const yr = Math.round(mo*12*(1-(DB.discounts[zone.id]?.y||0)/100));
+    priceBlock = `
+      <div class="section">
+        <label>${dic.per_day} (THB)</label>
+        <input ${canManage?'':'disabled'} data-mask value="${fmt(thbDay)}" data-k="thbDay"/>
+        <div class="hint">${dic.lak_mo.replace('{d}', DB.discounts[zone.id]?.m||0)}: <b class="calc-mo">${fmt(mo)}</b></div>
+        <div class="hint">${dic.lak_yr.replace('{d}', DB.discounts[zone.id]?.y||0)}: <b class="calc-yr">${fmt(yr)}</b></div>
+      </div>`;
+  }else{
+    const lakMo = thb2lak(b.thbMo||0);
+    const lakMoDisc = lakAfterDiscount(lakMo, zdisc.m||0);
+    const lakYrDisc = lakAfterDiscount(lakMo*12, zdisc.y||0);
+    priceBlock = `
+      <div class="section">
+        <label>${dic.price_thb_mo}</label>
+        <input ${canManage?'':'disabled'} data-mask value="${fmt(b.thbMo||0)}" data-k="thbMo"/>
+        <div class="hint">${dic.lak_mo.replace('{d}', zdisc.m||0)}: <b class="calc-mo">${fmt(lakMoDisc)}</b></div>
+        <div class="hint">${dic.lak_yr.replace('{d}', zdisc.y||0)}: <b class="calc-yr">${fmt(lakYrDisc)}</b></div>
+      </div>`;
+  }
+  const statusBadge = b.status==='free' ? `<span class="status s-free">${dic.status_free}</span>` : (b.status==='hold'? `<span class="status s-hold">${dic.status_hold}</span>` : `<span class="status s-busy">${dic.status_busy}</span>`);
+  const actions = `
+    <div class="row">
+      <button class="btn pri" data-request ${b.status!=='free'?'disabled':''}>${dic.request}</button>
+      <button class="btn" data-toggle ${canManage?'':'disabled'}>${dic.toggle}</button>
+      <button class="btn bad" data-del ${canManage?'':'disabled'}>${dic.del}</button>
+    </div>`;
+  const contractInfo = b.contract? `<div class="hint">${dic.start}: ${b.contract.start} • ${dic.end}: ${b.contract.end}</div>` : '';
+  const sizeCell = currentUser ? `<input data-mask value="${b.size||''}" data-k="size"/>` : `<div class="muted">${b.size||'-'}</div>`;
+  return `<div class="trow" data-code="${b.code}">
+    <div><b>${b.code}</b></div>
+    <div>${sizeCell}</div>
+    <div>${statusBadge}${contractInfo}</div>
+    <div>${priceBlock}</div>
+    <div>${actions}</div>
+  </div>`;
+}
+function bindZoneEvents(dic, zone, canManage){
+  $$('button[data-z]').forEach(b=> b.onclick=()=>{ window.__zoneSel=b.dataset.z; render(); });
+  const addZoneBtn = $('[data-add-zone]'); if(addZoneBtn) addZoneBtn.onclick=()=>{
+    if(!canManage) return;
+    const id = prompt('Zone ID (ตัวอักษรภาษาอังกฤษ A-Z):');
+    if(!id) return;
+    if(DB.zones.find(z=>z.id===id)){ alert('ซ้ำ'); return; }
+    const type = prompt('ชนิดราคา: M=รายเดือน, D=รายวัน (พิมพ์ M หรือ D)','M');
+    const name = prompt('ชื่อโซน (ภาษาไทย):', `Zone ${id}`);
+    const z = { id, name:{th:name||`Zone ${id}`, lo:`Zone ${id}`, en:`Zone ${id}`}, booths:[] };
+    DB.zones.push(z);
+    DB.discounts[id]={m:0,y:0};
+    DB.allowed[id]=(type==='D')?{d:true,m:true,y:true}:{d:false,m:true,y:true};
+    touch(); render();
+  };
+  const addBtn = $('[data-add]'); if(addBtn) addBtn.onclick=()=>{
+    if(!canManage) return; if(!confirm(i18n[LANG].confirm_add)) return;
+    const code = prompt('รหัสบูท?'); if(!code) return; const size=prompt('ขนาด?')||''; let nb = { code, size, status:'free' };
+    if(zone.id==='C'){ nb.thbDay=120; nb.bookings=[]; } else { nb.thbMo=0; }
+    zone.booths.push(nb); touch(); render();
+  };
+  $$('#boothList .trow').forEach(row=>{
+    const code = row.dataset.code; const b = zone.booths.find(x=>x.code===code);
+    row.querySelectorAll('input[data-mask]').forEach(inp=>{
+      inp.addEventListener('input', ()=>{ const raw = inp.dataset.k==='size' ? inp.value : parseNum(inp.value); inp.value = inp.dataset.k==='size'? raw : fmt(raw); b[inp.dataset.k] = raw; touch();
+        if(inp.dataset.k!=='size'){
+          if(zone.id==='C'){
+            const thbDay = b.thbDay||120; const lakDay = thb2lak(thbDay);
+            row.querySelector('.calc-mo').textContent = fmt(Math.round(lakDay*30*(1-(DB.discounts[zone.id]?.m||0)/100)));
+            row.querySelector('.calc-yr').textContent = fmt(Math.round(lakDay*30*12*(1-(DB.discounts[zone.id]?.y||0)/100)));
+          }else{
+            const lakMo = thb2lak(b.thbMo||0);
+            row.querySelector('.calc-mo').textContent = fmt(lakAfterDiscount(lakMo, DB.discounts[zone.id]?.m||0));
+            row.querySelector('.calc-yr').textContent = fmt(lakAfterDiscount(lakMo*12, DB.discounts[zone.id]?.y||0));
+          }
+        }
+      });
+    });
+    const del = row.querySelector('[data-del]'); if(del) del.onclick=()=>{ if(!canManage) return; if(!confirm(i18n[LANG].confirm_del.replace('{code}', code))) return; zone.booths = zone.booths.filter(x=>x.code!==code); touch(); render(); };
+    const tog = row.querySelector('[data-toggle]'); if(tog) tog.onclick=()=>{ if(!canManage) return; b.status = (b.status==='free')?'busy':'free'; if(b.status==='free') b.contract=null; touch(); render(); };
+    const req = row.querySelector('[data-request]'); if(req) req.onclick=()=>{
+      if(b.status!=='free'){ alert(dic.cannot_request); return; }
+      openRequestModal(dic, zone, b);
+    };
+  });
+}
+
+/* ================ Booking Requests ================ */
+function openRequestModal(dic, zone, booth){
+  const wrap = document.createElement('div');
+  wrap.style.position='fixed'; wrap.style.inset='0'; wrap.style.background='rgba(0,0,0,.35)'; wrap.style.display='grid'; wrap.style.placeItems='center'; wrap.style.zIndex=50;
+  wrap.innerHTML = `
+  <div class="card" style="width:min(560px,92vw)"><div class="content">
+    <h3>${dic.req_title} • ${zone.id}/${booth.code}</h3>
+    <div class="grid" style="grid-template-columns:1fr 1fr;gap:8px">
+      <div><label>${dic.renter}</label><input id="rqName"></div>
+      <div><label>${dic.phone}</label><input id="rqPhone"></div>
+      <div style="grid-column:1/3"><label>${dic.goods}</label><input id="rqGoods"></div>
+      <div><label>${dic.start}</label><input type="date" id="rqStart" value="${todayISO()}"></div>
+      <div><label>${dic.end}</label><input type="date" id="rqEnd" value="${todayISO()}"></div>
+    </div>
+    <div class="hint" id="rqSum" style="margin-top:6px"></div>
+    <div class="right" style="margin-top:10px">
+      <button class="btn" id="rqCancel">Cancel</button>
+      <button class="btn pri" id="rqOk">OK</button>
+    </div>
+  </div></div>`;
+  document.body.appendChild(wrap);
+  const updateSummary=()=>{
+    const s=$('#rqStart',wrap).value, e=$('#rqEnd',wrap).value; if(!s||!e){ $('#rqSum',wrap).textContent=''; return; }
+    const {y,m,d,total}=diffYMD(s,e);
+    let text=''; if(total>=365){ text = `${y} ${i18n[LANG].years} · ${m} ${i18n[LANG].months} · ${d} ${i18n[LANG].days}`; }
+    else { text = `${m} ${i18n[LANG].months} · ${d} ${i18n[LANG].days}`; }
+    $('#rqSum',wrap).textContent = text;
+  };
+  $('#rqStart',wrap).onchange=updateSummary; $('#rqEnd',wrap).onchange=updateSummary; updateSummary();
+  $('#rqCancel',wrap).onclick=()=> wrap.remove();
+  $('#rqOk',wrap).onclick=()=>{
+    const start = $('#rqStart',wrap).value, end = $('#rqEnd',wrap).value;
+    if(!start||!end){ alert('Select dates'); return; }
+    if(!withinAllowed(zone.id, start, end)){ alert(dic.rule_violate); return; }
+    const genId = (crypto.randomUUID? crypto.randomUUID() : ('ID-'+Date.now()+'-'+Math.random().toString(16).slice(2)));
+    const req = { id: genId, zone: zone.id, code: booth.code, name: $('#rqName',wrap).value||'', phone: $('#rqPhone',wrap).value||'', goods: $('#rqGoods',wrap).value||'', start, end, status:'pending' };
+    DB.requests.unshift(req); touch(); wrap.remove();
+    if(can.viewLeasing()){ activeTab='leasing'; render(); } else { alert('Request submitted'); render(); }
+  };
+}
+function renderLeasing(dic){
+  const rows = DB.requests.map(r=>`
+    <div class="trow" style="grid-template-columns:100px 1fr 140px 140px 1fr" data-id="${r.id}">
+      <div><b>${r.zone}/${r.code}</b></div>
+      <div>${r.name||'-'} · <span class="muted">${r.phone||''}</span><div class="hint">${r.goods||''}</div></div>
+      <div>${r.start}</div>
+      <div>${r.end}</div>
+      <div class="row right">
+        <button class="btn ok" data-approve>${dic.approve}</button>
+        <button class="btn bad" data-reject>${dic.reject}</button>
+      </div>
+    </div>`).join('');
+  const html = `
+    <section class="grid" style="gap:12px;margin-top:12px">
+      ${planBlock(dic, false)}
+      <div class="card"><div class="content">
+        <h3>${dic.leasing_reqs}</h3>
+        <div class="table">${rows||'<div class="muted">-</div>'}</div>
+      </div></div>
+    </section>`;
+  setTimeout(()=>bindLeasing(dic),0);
+  return html;
+}
+function bindLeasing(dic){
+  $$('#app [data-id]').forEach(row=>{
+    const id=row.dataset.id; const r = DB.requests.find(x=>x.id===id);
+    const approveBtn = $('[data-approve]',row);
+    const rejectBtn = $('[data-reject]',row);
+    if(approveBtn) approveBtn.onclick=()=>{
+      // allow only first approval for the same booth
+      const z = DB.zones.find(x=>x.id===r.zone); const b = z?.booths.find(x=>x.code===r.code);
+      if(!b || b.status!=='free'){ alert(dic.only_one_approve); DB.requests = DB.requests.filter(x=>x.id!==id); touch(); render(); return; }
+      b.status='busy'; b.contract={start:r.start,end:r.end};
+      // create tenant record
+      DB.tenants.unshift({
+        id: 'T-'+Date.now(),
+        zone:r.zone, code:r.code,
+        name:r.name, phone:r.phone, goods:r.goods,
+        start:r.start, end:r.end,
+        price: (r.zone==='C') ? (z && z.booths.find(x=>x.code===r.code)?.thbDay||0) : (z && z.booths.find(x=>x.code===r.code)?.thbMo||0),
+        note:''
+      });
+      // remove this request and any other requests for same booth
+      DB.requests = DB.requests.filter(x=> !(x.zone===r.zone && x.code===r.code));
+      touch(); render();
+    };
+    if(rejectBtn) rejectBtn.onclick=()=>{ DB.requests = DB.requests.filter(x=>x.id!==id); touch(); render(); };
+  });
+}
+
+/* ================ Tenants page & XLSX export ================= */
+function renderTenants(dic){
+  const rows = (DB.tenants||[]).map(t=>{
+    const left = Math.max(0, Math.ceil((new Date(t.end)-new Date())/86400000));
+    const leftHtml = (left<=0) ? `<span class="danger">${i18n[LANG].expired||'หมดสัญญา'}</span>` : `<span class="${left<=7?'danger':''}">${fmt(left)}</span>`;
+    const dur = diffYMD(t.start, t.end);
+    const durText = dur.total>=365 ? `${dur.y} ${i18n[LANG].years} · ${dur.m} ${i18n[LANG].months} · ${dur.d} ${i18n[LANG].days}` : `${dur.m} ${i18n[LANG].months} · ${dur.d} ${i18n[LANG].days}`;
+    return `<div class="tenRow" data-tid="${t.id}">
+      <div><b>${t.zone||''}</b></div>
+      <div>${t.code||''}</div>
+      <div><b>${t.name||'-'}</b></div>
+      <div>${t.phone||''}</div>
+      <div>${dateDMY(t.start)||''}</div>
+      <div>${dateDMY(t.end)||''}</div>
+      <div>${durText}</div>
+      <div>${fmt(t.price||0)}</div>
+      <div>${t.goods||''}</div>
+      <div>${leftHtml}</div>
+      <div><textarea class="note-cell" data-note>${t.note||''}</textarea></div>
+    </div>`;
+  }).join('');
+  const html = `
+  <section class="grid tenants-page" style="gap:12px;margin-top:12px">
+    <div class="card"><div class="content">
+      <div class="row"><h3 class="grow">${dic.ten_title}</h3><button class="btn" id="tenExport">${dic.ten_export}</button></div>
+      <div class="tenHead">
+        <div>${i18n[LANG].zone_col}</div>
+        <div>${i18n[LANG].code_col}</div>
+        <div>Name</div>
+        <div>${i18n[LANG].phone}</div>
+        <div>${i18n[LANG].start}</div>
+        <div>${i18n[LANG].end}</div>
+        <div>${i18n[LANG].duration}</div>
+        <div>${i18n[LANG].price}</div>
+        <div>${i18n[LANG].goods}</div>
+        <div>${i18n[LANG].days_left}</div>
+        <div>${i18n[LANG].note}</div>
+      </div>
+      <div id="tenBody">${rows||'<div class="muted">-</div>'}</div>
+    </div></div>
+  </section>`;
+  setTimeout(()=>{
+    $$('#tenBody [data-tid]').forEach(row=>{
+      const id=row.dataset.tid; const t = DB.tenants.find(x=>x.id===id);
+      $('[data-note]',row).addEventListener('input', (e)=>{ t.note = e.target.value; touch(); });
+    });
+    $('#tenExport').onclick = ()=> exportTenantsXLSX();
+  },0);
+  return html;
+}
+// Minimal XLSX generator (STORE only)
+function exportTenantsXLSX(){
+  const header = ['Zone','Code','Name','Phone','Start','End','Duration','Price(THB)','Goods','DaysLeft','Note'];
+  const rows = [header].concat(
+    (DB.tenants||[]).map(t=>{
+      const d = diffYMD(t.start, t.end);
+      const durText = d.total>=365 ? `${d.y} years · ${d.m} months · ${d.d} days` : `${d.m} months · ${d.d} days`;
+      const left = Math.max(0, Math.ceil((new Date(t.end)-new Date())/86400000));
+      return [t.zone||'', t.code||'', t.name||'', t.phone||'', dateDMY(t.start)||'', dateDMY(t.end)||'', durText, String(t.price||0), t.goods||'', String(left), t.note||''];
+    })
+  );
+  const csv = rows.map(row => row.map(v => '"' + String(v).replace(/"/g,'""') + '"').join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'tenants.csv';
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}function escapeXml(s){ return String(s).replace(/[<>&'\"]/g, ch => ({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;',"'":'&apos;'}
+)[ch]);
+}
+
+function colRef(n){ let s=''; while(n>=0){ s=String.fromCharCode(n%26+65)+s; n=Math.floor(n/26)-1; } return s; }
+// ZIP (STORE) implementation with CRC32
+function zipStore(fileMap){
+  function strToU8(str){ const u=new Uint8Array(new TextEncoder().encode(str)); return u; }
+  function writeUint32LE(v,arr,off){ arr[off]=v&255; arr[off+1]=(v>>>8)&255; arr[off+2]=(v>>>16)&255; arr[off+3]=(v>>>24)&255; }
+  function crc32(u8){ let c=~0>>>0; for(let i=0;i<u8.length;i++){ c=(c>>>8)^table[(c^u8[i])&255]; } return (~c)>>>0; }
+  const table=(()=>{ let t=new Uint32Array(256); for(let n=0;n<256;n++){ let c=n; for(let k=0;k<8;k++){ c=c&1?0xEDB88320^(c>>>1):c>>>1; } t[n]=c>>>0; } return t; })();
+  const files=[], names=[];
+  for(const [name,content] of Object.entries(fileMap)){ const data=strToU8(content); const crc=crc32(data); files.push({name,data,crc}); names.push(name); }
+
+  const chunks=[]; let offset=0; const central=[];
+  function push(arr){ chunks.push(arr); offset+=arr.length; }
+  for(const f of files){
+    const nameU8 = strToU8(f.name);
+    const local = new Uint8Array(30 + nameU8.length + f.data.length);
+    // Local header
+    writeUint32LE(0x04034b50, local, 0);
+    local[4]=20; local[5]=0; // version
+    local[6]=0; local[7]=0;  // flags
+    local[8]=0; local[9]=0;  // method 0 (store)
+    for(let i=10;i<14;i++) local[i]=0; // time/date
+    writeUint32LE(f.crc, local, 14);
+    writeUint32LE(f.data.length, local, 18);
+    writeUint32LE(f.data.length, local, 22);
+    local[26]=nameU8.length&255; local[27]=(nameU8.length>>>8)&255;
+    local.set(nameU8, 30);
+    local.set(f.data, 30+nameU8.length);
+    const localOff = offset;
+    push(local);
+
+    // Central directory
+    const cent = new Uint8Array(46 + nameU8.length);
+    writeUint32LE(0x02014b50, cent, 0);
+    cent[4]=20; cent[5]=0; // version made
+    cent[6]=20; cent[7]=0; // version needed
+    cent[8]=0; cent[9]=0;
+    cent[10]=0; cent[11]=0; // method
+    for(let i=12;i<16;i++) cent[i]=0;
+    writeUint32LE(f.crc, cent, 16);
+    writeUint32LE(f.data.length, cent, 20);
+    writeUint32LE(f.data.length, cent, 24);
+    cent[28]=nameU8.length&255; cent[29]=(nameU8.length>>>8)&255; // name len
+    // extra/comment zero
+    // disk/attributes zero
+    writeUint32LE(localOff, cent, 42); // local header offset
+    cent.set(nameU8, 46);
+    central.push(cent);
+  }
+  const centralSize = central.reduce((s,a)=>s+a.length,0);
+  const centralOffset = offset;
+  central.forEach(c=>push(c));
+  const end = new Uint8Array(22);
+  writeUint32LE(0x06054b50, end, 0);
+  end[8]=files.length&255; end[9]=(files.length>>>8)&255;
+  end[10]=files.length&255; end[11]=(files.length>>>8)&255;
+  writeUint32LE(centralSize, end, 12);
+  writeUint32LE(centralOffset, end, 16);
+  push(end);
+
+  // concat
+  const total = chunks.reduce((s,a)=>s+a.length,0);
+  const out = new Uint8Array(total);
+  let p=0; for(const c of chunks){ out.set(c, p); p+=c.length; }
+  return new Blob([out], {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+
+/* ================ Settings (includes Cloud + Users + Permissions) ================ */
+function renderSettings(dic){
+  const zids = DB.zones.map(z=>z.id); // after migration: only A-E
+  const rows = zids.map(z=>{
+    const d = DB.discounts[z]||{m:0,y:0}; const a = DB.allowed[z]||{d:false,m:false,y:false};
+    return `<div class="trow" style="grid-template-columns:40px 1fr 1fr 1fr" data-z="${z}">
+      <div><b>${z}</b></div>
+      <div><label>${dic.discounts} (Mo)</label><input data-mask value="${fmt(d.m)}" data-k="dm"></div>
+      <div><label>${dic.discounts} (Yr)</label><input data-mask value="${fmt(d.y)}" data-k="dy"></div>
+      <div>
+        <label>${dic.allowed}</label>
+        <div class="row">
+          <label><input type="checkbox" data-k="ad" ${a.d?'checked':''}> ${dic.per_day}</label>
+          <label><input type="checkbox" data-k="am" ${a.m?'checked':''}> ${dic.per_month}</label>
+          <label><input type="checkbox" data-k="ay" ${a.y?'checked':''}> ${dic.per_year}</label>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  const perm = DB.permissions || {};
+  const permRows = Object.keys(perm).map(role=>{
+    const pr = perm[role]||{};
+    return `<div class="trow" style="grid-template-columns:120px 1fr 1fr 1fr 1fr 1fr" data-role="${role}">
+      <div><b>${role}</b></div>
+      <label><input type="checkbox" data-k="overview" ${pr.overview?'checked':''}> ${dic.p_overview}</label>
+      <label><input type="checkbox" data-k="zones" ${pr.zones?'checked':''}> ${dic.p_zones}</label>
+      <label><input type="checkbox" data-k="leasing" ${pr.leasing?'checked':''}> ${dic.p_leasing}</label>
+      <label><input type="checkbox" data-k="tenants" ${pr.tenants?'checked':''}> ${dic.p_tenants}</label>
+      <label><input type="checkbox" data-k="settings" ${pr.settings?'checked':''}> ${dic.p_settings}</label>
+    </div>`;
+  }).join('');
+
+  const usersRows = (DB.users||[]).map((u,i)=>`
+    <div class="trow" style="grid-template-columns:160px 160px 160px 1fr" data-user="${i}">
+      <div><input value="${u.u}" data-k="u"></div>
+      <div><input value="${u.p}" data-k="p"></div>
+      <div>
+        <select data-k="role">
+          <option ${u.role==='Admin'?'selected':''}>Admin</option>
+          <option ${u.role==='Management'?'selected':''}>Management</option>
+        </select>
+      </div>
+      <div class="right"><button class="btn bad" data-del-user>${dic.del_user}</button></div>
+    </div>
+  `).join('');
+
+  const cloudStatus = Cloud.ready ? dic.fb_status_on : dic.fb_status_off;
+  const fbCfg = DB.firebase?.config ? JSON.stringify(DB.firebase.config, null, 2) : '';
+
+  const html = `
+    <section class="grid" style="gap:12px;margin-top:12px">
+      <div class="card"><div class="content">
+        <h3>${dic.settings_title}</h3>
+        <div class="row" style="align-items:center"><label style="width:120px">Project</label><input id="projName" class="grow" value="${DB.projectName||'Vientiane Town'}"/></div>
+        <div class="row" style="align-items:center"><label>1฿ =</label><input id="rate" value="${fmt(DB.rateTHB)}" style="width:120px;margin:0 8px"/><span>₭</span></div>
+        <div class="table" id="setZones">${rows}</div>
+      </div></div>
+
+      <div class="card"><div class="content">
+        <h3>${dic.cloud} — <span class="muted">${cloudStatus}</span></h3>
+        <div class="grid" style="gap:6px">
+          <label>${dic.fb_set}</label>
+          <textarea id="fbCfg" rows="6" placeholder='{"apiKey":"...","authDomain":"...","projectId":"..."}'>${fbCfg}</textarea>
+          <div class="row">
+            <div><label>Doc ID</label><input id="fbDoc" value="${DB.firebase?.docId||'main'}" style="width:180px"></div>
+            <button class="btn" id="fbConnect">${dic.fb_connect}</button>
+          </div>
+          <div class="hint">* ใส่ค่า Firebase ของคุณ แล้วกดเชื่อมต่อเพื่อให้ข้อมูลอัปเดตพร้อมกันทุกอุปกรณ์</div>
+        </div>
+      </div></div>
+
+      <div class="card"><div class="content">
+        <div class="row"><h3 class="grow">${dic.users}</h3><button class="btn" id="addUser">${dic.add_user}</button></div>
+        <div class="table" id="userTbl">${usersRows}</div>
+      </div></div>
+
+      <div class="card"><div class="content">
+        <h3>${dic.perm_title}</h3>
+        <div class="table" id="permTbl">${permRows}</div>
+      </div></div>
+
+      <div class="right" style="margin-top:10px"><button class="btn pri" id="saveSet">${dic.save}</button></div>
+    </section>`;
+  setTimeout(bindSettings,0);
+  return html;
+}
+function bindSettings(){
+  $('#rate').addEventListener('input', e=> e.target.value = fmt(parseNum(e.target.value)) );
+  $('#saveSet').onclick=()=>{
+    DB.rateTHB = parseNum($('#rate').value)||THB_to_LAK_DEFAULT;
+    $$('#setZones .trow').forEach(row=>{
+      const z=row.dataset.z; DB.discounts[z]={ m:parseNum($('[data-k="dm"]',row).value), y:parseNum($('[data-k="dy"]',row).value) };
+      DB.allowed[z]={ d:$('[data-k="ad"]',row).checked, m:$('[data-k="am"]',row).checked, y:$('[data-k="ay"]',row).checked };
+    });
+    DB.permissions = DB.permissions || {};
+    $$('#permTbl .trow').forEach(row=>{
+      const role=row.dataset.role; DB.permissions[role]={
+        overview:$('[data-k="overview"]',row).checked,
+        zones:$('[data-k="zones"]',row).checked,
+        leasing:$('[data-k="leasing"]',row).checked,
+        tenants:$('[data-k="tenants"]',row).checked,
+        settings:$('[data-k="settings"]',row).checked,
+      };
+    });
+    const pnEl = document.getElementById('projName');
+    if(pnEl){ DB.projectName = pnEl.value || 'Vientiane Town'; }
+    // Users
+    const list=[];
+    $$('#userTbl .trow').forEach(row=>{
+      list.push({ u:$('[data-k="u"]',row).value, p:$('[data-k="p"]',row).value, role:$('[data-k="role"]',row).value });
+    });
+    DB.users=list;
+    touch(); alert('Saved');
+    render();
+  };
+  // Users add/del
+  $('#addUser').onclick=()=>{ DB.users.push({u:'user'+(DB.users.length+1), p:'pass', role:'Management'}); touch(); render(); };
+  $$('#userTbl [data-del-user]').forEach(btn=>{
+    btn.onclick=()=>{ const row=btn.closest('.trow'); const idx=Number(row.dataset.user); DB.users.splice(idx,1); touch(); render(); };
+  });
+  // Cloud connect
+  $('#fbConnect').onclick=()=>{
+    try{
+      const cfgText = $('#fbCfg').value.trim(); DB.firebase = DB.firebase||{};
+      DB.firebase.config = cfgText? JSON.parse(cfgText) : null;
+      DB.firebase.docId = $('#fbDoc').value||'main';
+      touch(); Cloud.init(); alert('OK');
+    }catch(e){ alert('Config ไม่ถูกต้อง'); }
+  };
+}
+
+/* ================ Global events ================ */
+window.addEventListener('click', (e)=>{
+  if(e.target && e.target.id==='saveAnn'){ if(!(currentUser && (currentUser.role==='Admin'||currentUser.role==='Management'))) e.preventDefault(); }
+  const rn = e.target.closest && e.target.closest('[data-rename]');
+  if(rn){ const zid = rn.getAttribute('data-rename'); openInlineRename(zid); }
+  const br = e.target.closest && e.target.closest('[data-brand-rename]');
+  if(br){ openBrandRename(); }
+});
+
+// init
+render();
+Cloud.init();
+
+</script>
+
+<script>
+// Auto-connect guard (ensures config exists even if local data missing)
+(function(){ 
+  try{ 
+    window.DB = window.DB || {}; 
+    DB.firebase = DB.firebase || {}; 
+    if(!DB.firebase.config) DB.firebase.config = {"apiKey": "AIzaSyD2ahhyNxmkdAhN5DTRD6bdy_a-aeWHEbY", "authDomain": "chptown.firebaseapp.com", "projectId": "chptown", "storageBucket": "chptown.firebasestorage.app", "messagingSenderId": "289558487610", "appId": "1:289558487610:web:0115041d71adedfbe40b03"}; 
+    if(!DB.firebase.docId) DB.firebase.docId = 'main'; 
+  }catch(e){ console.warn(e); }
+})();
+</script>
+
+</body>
+</html>
